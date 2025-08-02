@@ -2,32 +2,30 @@ from htmlnode import LeafNode, ParentNode
 from textnode import TextNode, TextType
 import re
 
-dict = {
+text_markers = {
     TextType.TEXT: "",
     TextType.BOLD: "**",
     TextType.ITALIC: "*",
-    TextType.CODE: "'",
+    TextType.CODE: ["'", "_", "`"],
 }
 
 def split_nodes_delimiter(old_nodes, delimiter, text_type):
-    if text_type not in [TextType.TEXT, TextType.BOLD, TextType.ITALIC, TextType.CODE]:
-        raise ValueError("text_type must be TEXT, BOLD, ITALIC, or CODE")
-    
-    if not isinstance(old_nodes, list):
-        raise ValueError("old_nodes must be a list of TextNode instances") 
-
-    if text_type not in dict or dict[text_type] != delimiter:
+    if text_type not in text_markers or delimiter not in text_markers[text_type]:
         raise ValueError("text_type and delimiter combination is not supported")
 
     new_nodes = []
 
     for node in old_nodes:
+        if not isinstance(node, (TextNode, LeafNode, ParentNode)):
+            raise ValueError("old_node must be an instance of TextNode, LeafNode, or ParentNode")
+
         if (node.text_type != TextType.TEXT) or (text_type == TextType.TEXT and delimiter == ""): 
             new_nodes.append(node)
             continue
 
         if node.text.count(delimiter) == 0:
-            raise ValueError(f"TextNode with text '{node.text}' does not contain the delimiter '{delimiter}'")
+            new_nodes.append(node)
+            continue
         if node.text.count(delimiter) % 2 != 0:
             raise ValueError(f"TextNode with text '{node.text}' contains an odd number of delimiters '{delimiter}'")
         
@@ -50,16 +48,6 @@ def split_nodes_delimiter(old_nodes, delimiter, text_type):
             
     return new_nodes
 
-def extract_markdown_images(text):
-    if not isinstance(text, str):
-        raise ValueError("text must be a string")
-    
-    match = re.findall(r'!\[([^\]]*)\]\(([^)]+)\)', text)
-
-    if match == []:
-        return []
-
-    return match
 
 def extract_markdown_links(text):
     if not isinstance(text, str):
@@ -67,7 +55,78 @@ def extract_markdown_links(text):
     
     match = re.findall(r"(?<!!)\[([^\[\]]*)\]\(([^\(\)]*)\)", text)
 
-    if match == []:
-        return []
+    return match
+
+def split_nodes_links(old_nodes):
+    new_nodes = []
+    for node in old_nodes:
+        if not isinstance(node, (TextNode, LeafNode, ParentNode)):
+            raise ValueError("old_node must be an instance of TextNode, LeafNode, or ParentNode")
+
+        if node.text_type != TextType.TEXT:
+            new_nodes.append(node)
+            continue
+        links = extract_markdown_links(node.text)
+
+        if links ==[]:
+            new_nodes.append(node)
+            continue
+
+        target_text = node.text
+        for name, url in links:
+            section = target_text.split(f"[{name}]({url})",1)
+            if section[0] != "":
+                new_nodes.append(TextNode(section[0], TextType.TEXT, node.url))
+            new_nodes.append(TextNode(name, TextType.LINK, url))
+            target_text = section[1]    
+        if target_text != "":
+            new_nodes.append(TextNode(target_text, TextType.TEXT, node.url))
+
+    return new_nodes
+
+def extract_markdown_images(text):
+    if not isinstance(text, str):
+        raise ValueError("text must be a string")
+    
+    match = re.findall(r'!\[([^\]]*)\]\(([^)]+)\)', text)
 
     return match
+
+def split_nodes_image(old_nodes):
+    new_nodes = []
+    for node in old_nodes:
+        if not isinstance(node, (TextNode, LeafNode, ParentNode)):
+            raise ValueError("old_node must be an instance of TextNode, LeafNode, or ParentNode")
+
+        if node.text_type != TextType.TEXT:
+            new_nodes.append(node)
+            continue
+        images = extract_markdown_images(node.text)
+
+        if images ==[]:
+            new_nodes.append(node)
+            continue
+
+        target_text = node.text
+        for name, url in images:
+            section = target_text.split(f"![{name}]({url})",1)
+            if section[0] != "":
+                new_nodes.append(TextNode(section[0], TextType.TEXT, node.url))
+            new_nodes.append(TextNode(name, TextType.IMAGE, url))
+            target_text = section[1]    
+        if target_text != "":
+            new_nodes.append(TextNode(target_text, TextType.TEXT, node.url))
+
+    return new_nodes
+
+def text_to_textnode(text):
+    nodes = [TextNode(text, TextType.TEXT)]
+    nodes = split_nodes_delimiter(nodes, "**", TextType.BOLD)
+    nodes = split_nodes_delimiter(nodes, "*", TextType.ITALIC)
+    nodes = split_nodes_delimiter(nodes, "'", TextType.CODE)
+    nodes = split_nodes_delimiter(nodes, "`", TextType.CODE)
+    nodes = split_nodes_delimiter(nodes, "_", TextType.CODE)
+    nodes = split_nodes_links(nodes)
+    nodes = split_nodes_image(nodes)
+
+    return nodes

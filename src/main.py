@@ -3,8 +3,7 @@ from htmlnode import LeafNode, ParentNode
 
 
 def main():
-    test = TextNode("test", TextType.LINK,"http://test.test")   
-    print (test)
+    print ("hello world")
 
 
 def text_node_to_html_node(text_node):
