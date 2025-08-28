@@ -6,6 +6,7 @@ class BlockType(Enum):
     HEADING = "heading"
     CODE = "code"
     QUOTE = "quote"
+    HORIZONTAL_RULE = "horizontal_rule"
     UNORDERED_LIST = "unordered_list"
     ORDERED_LIST = "ordered_list"
 
@@ -22,16 +23,19 @@ def block_to_block_type(block):
     if lines and re.match(r'^#{1,6}\s', lines[0]):
         return BlockType.HEADING
     
-    if len(lines) >= 2 and (lines[0].startswith("```") or lines[0].startswith("~~~")) and lines[-1].startswith(lines[0][:3]):
+    if len(lines) >= 2 and lines[0].startswith("```") and lines[-1].startswith(lines[0][:3]):
         return BlockType.CODE
     
     if block.lstrip().startswith(">"):
         return BlockType.QUOTE
     
+    if block.lstrip().startswith("---") or block.lstrip().startswith("***") or block.lstrip().startswith("___"):
+        return BlockType.HORIZONTAL_RULE
+
     if block.lstrip().startswith("- "):
         return BlockType.UNORDERED_LIST
     
-    if all(re.match(rf'^{i+1}\. ', line.lstrip()) for i, line in enumerate(block.splitlines()) if line.strip() != ''):
+    if re.match(r'^\d+\.\s', block.lstrip()):
         return BlockType.ORDERED_LIST
         
     return BlockType.PARAGRAPH

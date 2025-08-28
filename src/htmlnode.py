@@ -42,7 +42,10 @@ class ParentNode(HTMLNode):
             raise ValueError("ParentNode must have children")
         children_html = "".join(child.to_html() for child in self.children)
         props_html = self.props_to_html() if self.props else ""
-        props_str = f"{props_html}" if props_html else ""  
+        props_str = f" {props_html}" if props_html else ""  
 
+        if self.tag is "hr":
+            return f"<{self.tag}{props_str}>"
+        
         return f"<{self.tag}{props_str}>{children_html}</{self.tag}>"
     

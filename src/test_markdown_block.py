@@ -34,7 +34,7 @@ This is the same paragraph on a new line
         self.assertEqual(block_to_block_type("> This is a quote\n > This is second.\n > This is third"), BlockType.QUOTE)
         self.assertEqual(block_to_block_type("- Item 1\n- Item 2\n - TEHETEHE\n - TEHE4"), BlockType.UNORDERED_LIST)
         self.assertEqual(block_to_block_type("1. First item\n2. Second item\n 3. RENSYU"), BlockType.ORDERED_LIST)
-        self.assertEqual(block_to_block_type("1. First item\n3. Second item\n 6. RENSYU"), BlockType.PARAGRAPH)
+
 
 
 

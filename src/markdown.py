@@ -5,8 +5,8 @@ import re
 text_markers = {
     TextType.TEXT: "",
     TextType.BOLD: "**",
-    TextType.ITALIC: "*",
-    TextType.CODE: ["'", "_", "`"],
+    TextType.ITALIC: ["*","_"],
+    TextType.CODE: ["'", "`"],
 }
 
 def split_nodes_delimiter(old_nodes, delimiter, text_type):
@@ -23,7 +23,7 @@ def split_nodes_delimiter(old_nodes, delimiter, text_type):
             new_nodes.append(node)
             continue
 
-        if node.text.count(delimiter) == 0:
+        if node.text.count(delimiter) == 0 or node.text.count(delimiter) == 1:
             new_nodes.append(node)
             continue
         if node.text.count(delimiter) % 2 != 0:
@@ -120,12 +120,24 @@ def split_nodes_image(old_nodes):
     return new_nodes
 
 def text_to_textnode(text):
+    text = text.strip()
     nodes = [TextNode(text, TextType.TEXT)]
     nodes = split_nodes_delimiter(nodes, "**", TextType.BOLD)
     nodes = split_nodes_delimiter(nodes, "*", TextType.ITALIC)
     nodes = split_nodes_delimiter(nodes, "'", TextType.CODE)
     nodes = split_nodes_delimiter(nodes, "`", TextType.CODE)
-    nodes = split_nodes_delimiter(nodes, "_", TextType.CODE)
+    nodes = split_nodes_delimiter(nodes, "_", TextType.ITALIC)
+    nodes = split_nodes_links(nodes)
+    nodes = split_nodes_image(nodes)
+
+    return nodes
+
+def codetext_to_textnode(text):
+    text = text.strip()
+    nodes = [TextNode(text, TextType.TEXT)]
+    nodes = split_nodes_delimiter(nodes, "**", TextType.BOLD)
+    nodes = split_nodes_delimiter(nodes, "*", TextType.ITALIC)
+    nodes = split_nodes_delimiter(nodes, "_", TextType.ITALIC)
     nodes = split_nodes_links(nodes)
     nodes = split_nodes_image(nodes)
 
